@@ -1,58 +1,49 @@
-
+from collections import Counter
+from functools import cache
 from pathlib import Path
+
 script_location = Path(__file__).absolute().parent
-with open(script_location / 'input.txt', mode='r', encoding='utf-8') as f:
+with open(script_location / 'test.txt', mode='r', encoding='utf-8') as f:
     inpu = list(map(lambda x: list(x[:len(x)-1].split()), f.readlines()))
 
+polymer = inpu[0][0]
+counter = dict()
+rules = dict()
+for rule in inpu[2:]:
+    left_right, _, mid = rule.partition(" -> ")
+    left, right = tuple(left_right)
+    rules[(left, right)] = mid
 
-coord = inpu[:inpu.index([])]
-instruction = inpu[inpu.index([])+1:]
+
+print(rules)
 
 
-coord = list(
-    map(lambda x: {'x': int(x[0].split(',')[0]), 'y': int(x[0].split(',')[1])}, coord))
-maxX = 0
-maxY = 0
-for item in coord:
-    maxX = max(maxX, item['x'])
-    maxY = max(maxY, item['y'])
-#print(maxX, maxY)
+def solve(template, rules, n):
 
-matrix = [[' ' for i in range(maxX+1)] for j in range(maxY+1)]
-for item in coord:
-    matrix[item['y']][item['x']] = '█'
-# print('\n'.join(map(''.join, matrix)))
+    if not len(template):
+        return 0
 
-# print(firstOrder)
-for inst in instruction:
-    order = inst[2].split('=')
+    @cache
+    def count_between(left, right, n):
+        if n == 0:
+            return Counter(left)
+        mid = rules[(left, right)]
+        return count_between(left, mid, n - 1) + count_between(mid, right, n - 1)
+    counts = Counter(template[-1])
+    for left, right in zip(template, template[1:]):
+        counts += count_between(left, right, n)
+    lowest, *_, highest = sorted(counts.values())
 
-    if order[0] == 'y':
-        axis = int(order[1])
-        for i in range(axis+1):
-            for j in range(maxX+1):
-                if axis+i < maxY+1 and axis-i >= 0 and matrix[axis+i][j] == "█":
-                    matrix[axis-i][j] = "█"
-                    matrix[axis+i][j] = ' '
-    else:
-        axis = int(order[1])
-        for i in range(axis+1):
-            for j in range(maxY+1):
-                if axis+i < maxX + 1 and axis-i >= 0 and matrix[j][axis+i] == "█":
-                    matrix[j][axis-i] = "█"
-                    matrix[j][axis+i] = ' '
+    return highest - lowest
 
-#print('\n'.join(map(''.join, matrix)))
-# out = sum(x.count('#') for x in matrix)
-# print(out)
 
+print(solve(polymer, rules, 40))
 
 result = list()
-# result.append([str(out)])
-result = matrix
+#result.append([str(most[1] - least[1])])
 
 
 with open(script_location / "output.out", mode='w', encoding='utf-8') as f:
     for i in result:
 
-        f.write("".join(i)+"\n")
+        f.write(" ".join(i)+"\n")
